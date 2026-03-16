@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>現代化 BMI 計算機 - 純淨極簡版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #ffffff; /* 改為純白色背景 */
+            color: #1f2937;
+            overflow-x: hidden;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+        }
+
+        /* 調整卡片樣式，在白背景下使用淺灰色邊框增強層次感 */
+        .glass-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+        }
+
+        .bmi-indicator {
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .gender-btn {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .gender-btn.active.male {
+            background: #4f46e5;
+            color: white;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+        }
+
+        .gender-btn.active.female {
+            background: #db2777;
+            color: white;
+            box-shadow: 0 4px 15px rgba(219, 39, 119, 0.4);
+        }
+
+        /* 表格顏色區分 */
+        .row-under { background-color: #eff6ff; }
+        .row-normal { background-color: #f0fdf4; }
+        .row-over { background-color: #fffbeb; }
+        .row-obese-1 { background-color: #fff7ed; }
+        .row-obese-2 { background-color: #fef2f2; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 lg:p-8">
+
+    <!-- 主容器 -->
+    <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- 左側：BMI 計算機 -->
+        <div class="lg:col-span-5 glass-card rounded-[2.5rem] overflow-hidden order-1">
+            <div class="gradient-bg p-10 text-white text-center relative">
+                <div class="relative z-10">
+                    <h1 class="text-3xl font-black mb-1 tracking-tight">BMI 計算機</h1>
+                    <p class="opacity-80 text-xs font-medium tracking-widest uppercase">身體質量分析</p>
+                </div>
+            </div>
+
+            <div class="p-8 space-y-6">
+                <!-- 性別選擇 -->
+                <div class="space-y-3">
+                    <label class="block text-sm font-bold text-gray-700 ml-1">您的性別</label>
+                    <div class="flex p-1.5 bg-gray-100 rounded-2xl border border-gray-200">
+                        <button onclick="setGender('male')" id="btn-male" class="gender-btn active male flex-1 py-3 rounded-xl text-sm font-black transition-all">
+                            👨 男性
+                        </button>
+                        <button onclick="setGender('female')" id="btn-female" class="gender-btn flex-1 py-3 rounded-xl text-sm font-black transition-all">
+                            👩 女性
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 輸入區域 -->
+                <div class="space-y-4">
+                    <div class="flex space-x-4">
+                        <div class="flex-1">
+                            <label class="block text-sm font-bold text-gray-700 mb-2 ml-1">年齡</label>
+                            <input type="number" id="age" placeholder="25" 
+                                class="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-200 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 outline-none transition-all shadow-sm text-lg font-medium">
+                        </div>
+                        <div class="flex-[2]">
+                            <label class="block text-sm font-bold text-gray-700 mb-2 ml-1">身高 (cm)</label>
+                            <input type="number" id="height" placeholder="175" 
+                                class="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-200 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 outline-none transition-all shadow-sm text-lg font-medium">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2 ml-1">體重 (kg)</label>
+                        <input type="number" id="weight" placeholder="70" 
+                            class="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-200 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 outline-none transition-all shadow-sm text-lg font-medium">
+                    </div>
+                    <button onclick="calculateBMI()" 
+                        class="w-full py-5 gradient-bg text-white font-black rounded-2xl shadow-lg hover:opacity-90 transform active:scale-[0.96] transition-all text-xl mt-2">
+                        開始計算
+                    </button>
+                </div>
+            </div>
+            <div class="bg-gray-50 p-4 text-center border-t border-gray-100">
+                <span class="text-[10px] text-gray-400 font-black tracking-widest uppercase">系統版本 v3.2</span>
+            </div>
+        </div>
+
+        <!-- 右側：結果與對照表 -->
+        <div class="lg:col-span-7 space-y-8 order-2">
+            
+            <!-- 結果顯示區 -->
+            <div id="resultSection" class="hidden glass-card rounded-[2.5rem] p-8 animate-in zoom-in-95 duration-500">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div class="text-center md:text-left">
+                        <p class="text-gray-400 text-xs font-black uppercase tracking-[0.3em] mb-2">分析結果</p>
+                        <div class="flex items-center justify-center md:justify-start">
+                            <span id="bmiValue" class="text-7xl font-black text-transparent bg-clip-text gradient-bg tracking-tighter">--</span>
+                        </div>
+                        <div id="statusTag" class="mt-4 inline-block px-8 py-2 rounded-full text-white font-black text-sm shadow-lg">
+                            --
+                        </div>
+                    </div>
+                    <div id="adviceBox" class="rounded-[2rem] p-6 border-2 shadow-sm relative overflow-hidden min-h-[120px] flex items-center">
+                        <div id="adviceDecorator" class="absolute top-0 right-0 w-24 h-24 opacity-10 -mr-8 -mt-8 rounded-full"></div>
+                        <p id="adviceText" class="text-gray-800 text-sm leading-relaxed font-bold relative z-10"></p>
+                    </div>
+                </div>
+
+                <!-- 彩色量表 -->
+                <div class="relative mt-10 px-1">
+                    <div class="flex h-4 w-full rounded-full overflow-hidden bg-gray-100 shadow-inner">
+                        <div class="h-full bg-blue-400" style="width: 25%"></div>
+                        <div class="h-full bg-green-500" style="width: 25%"></div>
+                        <div class="h-full bg-yellow-400" style="width: 20%"></div>
+                        <div class="h-full bg-orange-500" style="width: 15%"></div>
+                        <div class="h-full bg-red-600" style="width: 15%"></div>
+                    </div>
+                    <div id="indicator" class="bmi-indicator absolute top-5 w-2 h-7 bg-gray-900 rounded-full border-2 border-white shadow-lg -translate-x-1/2" style="left: 50%"></div>
+                    <div class="flex justify-between text-[10px] font-black text-gray-400 mt-3 px-1 uppercase tracking-widest">
+                        <span>過輕</span>
+                        <span>正常</span>
+                        <span>過重</span>
+                        <span>肥胖</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BMI 參考表區塊 -->
+            <div class="glass-card rounded-[2.5rem] overflow-hidden">
+                <div class="bg-gray-800 p-6 text-white flex items-center justify-between">
+                    <h2 class="text-xl font-black tracking-wide flex items-center">
+                        <span class="mr-3">📊</span> BMI 指標對照表
+                    </h2>
+                    <span class="text-[10px] bg-white/20 px-3 py-1 rounded-full font-bold uppercase">WHO 標準</span>
+                </div>
+                <div class="p-4 overflow-x-auto">
+                    <table class="w-full text-sm text-left border-separate border-spacing-y-2">
+                        <thead class="text-gray-400 text-[10px] font-black uppercase tracking-widest">
+                            <tr>
+                                <th class="px-6 py-2">BMI 範圍 (kg/m²)</th>
+                                <th class="px-6 py-2">體型分類</th>
+                                <th class="px-6 py-2 text-right">健康風險評估</th>
+                            </tr>
+                        </thead>
+                        <tbody class="font-bold text-gray-700">
+                            <tr class="row-under">
+                                <td class="px-6 py-4 rounded-l-2xl border-l border-y border-blue-100">&lt; 18.5</td>
+                                <td class="px-6 py-4 text-blue-600 border-y border-blue-100">體重過輕</td>
+                                <td class="px-6 py-4 text-right text-blue-500 rounded-r-2xl border-r border-y border-blue-100">中等風險 (偏低)</td>
+                            </tr>
+                            <tr class="row-normal">
+                                <td class="px-6 py-4 rounded-l-2xl border-l border-y border-green-100">18.5 - 24</td>
+                                <td class="px-6 py-4 text-green-600 border-y border-green-100">正常範圍</td>
+                                <td class="px-6 py-4 text-right text-green-500 rounded-r-2xl border-r border-y border-green-100">風險最低</td>
+                            </tr>
+                            <tr class="row-over">
+                                <td class="px-6 py-4 rounded-l-2xl border-l border-y border-yellow-100">24 - 27</td>
+                                <td class="px-6 py-4 text-yellow-600 border-y border-yellow-100">體重過重</td>
+                                <td class="px-6 py-4 text-right text-yellow-500 rounded-r-2xl border-r border-y border-yellow-100">風險增加</td>
+                            </tr>
+                            <tr class="row-obese-1">
+                                <td class="px-6 py-4 rounded-l-2xl border-l border-y border-orange-100">27 - 30</td>
+                                <td class="px-6 py-4 text-orange-600 border-y border-orange-100">輕度肥胖</td>
+                                <td class="px-6 py-4 text-right text-orange-500 rounded-r-2xl border-r border-y border-orange-100">中等風險</td>
+                            </tr>
+                            <tr class="row-obese-2">
+                                <td class="px-6 py-4 rounded-l-2xl border-l border-y border-red-100">&ge; 30</td>
+                                <td class="px-6 py-4 text-red-600 border-y border-red-100">中重度肥胖</td>
+                                <td class="px-6 py-4 text-right text-red-500 rounded-r-2xl border-r border-y border-red-100">極高風險</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentGender = 'male';
+
+        function setGender(gender) {
+            currentGender = gender;
+            const btnMale = document.getElementById('btn-male');
+            const btnFemale = document.getElementById('btn-female');
+            
+            if (gender === 'male') {
+                btnMale.className = 'gender-btn active male flex-1 py-3 rounded-xl text-sm font-black transition-all';
+                btnFemale.className = 'gender-btn flex-1 py-3 rounded-xl text-sm font-black transition-all';
+            } else {
+                btnMale.className = 'gender-btn flex-1 py-3 rounded-xl text-sm font-black transition-all';
+                btnFemale.className = 'gender-btn active female flex-1 py-3 rounded-xl text-sm font-black transition-all';
+            }
+            
+            if (!document.getElementById('resultSection').classList.contains('hidden')) {
+                calculateBMI();
+            }
+        }
+
+        function calculateBMI() {
+            const ageVal = document.getElementById('age').value;
+            const hVal = document.getElementById('height').value;
+            const wVal = document.getElementById('weight').value;
+            
+            const age = parseInt(ageVal);
+            const height = parseFloat(hVal) / 100;
+            const weight = parseFloat(wVal);
+
+            if (!ageVal || !hVal || !wVal || age <= 0 || height <= 0 || weight <= 0) {
+                showError();
+                return;
+            }
+
+            const bmi = (weight / (height * height)).toFixed(1);
+            displayResult(bmi, age);
+        }
+
+        function showError() {
+            const btn = document.querySelector('button[onclick="calculateBMI()"]');
+            const originalText = btn.innerText;
+            btn.innerText = '⚠️ 欄位有誤';
+            btn.classList.add('bg-red-500');
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.classList.remove('bg-red-500');
+            }, 1500);
+        }
+
+        function displayResult(bmi, age) {
+            const resultSection = document.getElementById('resultSection');
+            const bmiValue = document.getElementById('bmiValue');
+            const statusTag = document.getElementById('statusTag');
+            const adviceText = document.getElementById('adviceText');
+            const adviceBox = document.getElementById('adviceBox');
+            const indicator = document.getElementById('indicator');
+            const adviceDeco = document.getElementById('adviceDecorator');
+
+            resultSection.classList.remove('hidden');
+            bmiValue.innerText = bmi;
+
+            let status, colorClass, advice, percent, borderClass, decoColor;
+
+            if (age >= 18) {
+                if (bmi < 18.5) {
+                    status = "體重過輕";
+                    colorClass = "bg-blue-500";
+                    borderClass = "border-blue-200 bg-blue-50/50 text-blue-900";
+                    decoColor = "bg-blue-400";
+                    advice = currentGender === 'male' ? "💪 體重偏輕。男性應注意肌少症風險，建議加強蛋白質與訓練。" : "🥗 體重偏輕。女性應注意營養攝取與鈣質，維持內分泌穩定。";
+                    percent = Math.max(5, (bmi / 18.5 * 25));
+                } else if (bmi < 24) {
+                    status = "理想體重";
+                    colorClass = "bg-green-600";
+                    borderClass = "border-green-200 bg-green-50/50 text-green-900";
+                    decoColor = "bg-green-400";
+                    advice = age >= 65 ? "🌟 完美狀態！高齡者維持微胖（BMI 22-26）對免疫力更有保護。" : "✨ 恭喜！您的 BMI 處於黃金比例。請繼續保持運動與飲食習慣。";
+                    percent = 25 + ((bmi - 18.5) / 5.5 * 25);
+                } else if (bmi < 27) {
+                    status = "過重趨勢";
+                    colorClass = "bg-yellow-500";
+                    borderClass = "border-yellow-200 bg-yellow-50/50 text-yellow-900";
+                    decoColor = "bg-yellow-400";
+                    advice = "⚠️ 體重稍重。建議檢視日常糖分攝取，並維持規律運動。";
+                    percent = 50 + ((bmi - 24) / 3 * 20);
+                } else if (bmi < 30) {
+                    status = "輕度肥胖";
+                    colorClass = "bg-orange-500";
+                    borderClass = "border-orange-200 bg-orange-50/50 text-orange-900";
+                    decoColor = "bg-orange-400";
+                    advice = "📉 已達肥胖標準。建議尋求專業建議控管體脂，預防三高風險。";
+                    percent = 70 + ((bmi - 27) / 3 * 15);
+                } else {
+                    status = "重度肥胖";
+                    colorClass = "bg-red-600";
+                    borderClass = "border-red-200 bg-red-50/50 text-red-900";
+                    decoColor = "bg-red-400";
+                    advice = "🚨 嚴重肥胖！強烈建議諮詢醫療團隊進行體重管理。";
+                    percent = Math.min(95, 85 + ((bmi - 30) / 10 * 15));
+                }
+            } else {
+                status = "成長發育中";
+                colorClass = "bg-gray-600";
+                borderClass = "border-gray-200 bg-gray-50/50 text-gray-900";
+                decoColor = "bg-gray-400";
+                advice = "🧒 青少年標準會隨年齡微調，請對照生長百分位表以確認發育狀況。";
+                percent = 50; 
+            }
+
+            statusTag.innerText = status;
+            statusTag.className = `mt-4 inline-block px-8 py-2 rounded-full text-white font-black text-sm shadow-lg ${colorClass}`;
+            adviceBox.className = `rounded-[2rem] p-6 border-2 shadow-sm relative overflow-hidden ${borderClass}`;
+            adviceText.innerText = advice;
+            adviceDeco.className = `absolute top-0 right-0 w-24 h-24 opacity-10 -mr-8 -mt-8 rounded-full ${decoColor}`;
+            indicator.style.left = `${percent}%`;
+            
+            resultSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
